@@ -33,6 +33,7 @@ type Response struct {
 var (
 	writeCount  = flag.Int("writeCount", 0, "Total of writes count")
 	writeKey = flag.String("writeKey", "", "Write a specific key")
+	writeCon = flag.Bool("writeCon", false, "Write concurrently")
 
 	readCount  = flag.Int("readCount", 0, "Total of reads count")
 	readKey = flag.String("readKey", "", "Read a specific key")
@@ -47,7 +48,7 @@ func init() {
 }
 
 func main() {
-	fmt.Printf("action=%s verbose=%t writeCount=%d writeKey=%s readCount=%d readKey=%s readCon=%t\n", *action, *verbose, *writeCount, *writeKey, *readCount, *readKey, *readCon)
+	fmt.Printf("action=%s verbose=%t writeCount=%d writeKey=%s writeCon=%t readCount=%d readKey=%s readCon=%t\n", *action, *verbose, *writeCount, *writeKey, *writeCon, *readCount, *readKey, *readCon)
 	switch *action {
 	case "read":
 		if *readCount <= 0 {
@@ -57,7 +58,6 @@ func main() {
 		l := len(r.Node.Nodes)
 		start := time.Now()
 		if *readCon {
-			// Read concurrently
 			var wg sync.WaitGroup
 			var sem = make(chan struct{}, 100)
 			var key string
@@ -98,15 +98,38 @@ func main() {
 		if *writeCount <= 0 {
 			break
 		}
-		var key string
 		start := time.Now()
-		for i := 0; i < *writeCount; i++ {
-			if *writeKey != "" {
-				key = *writeKey
-			} else {
-				key = fmt.Sprintf("%d", time.Now().Unix())
+		if *writeCon {
+			var wg sync.WaitGroup
+			var sem = make(chan struct{}, 100)
+			var key string
+			for i := 0; i < *writeCount; i++ {
+				wg.Add(1)
+				if *writeKey != "" {
+					key = *writeKey
+				} else {
+					key = fmt.Sprintf("%d", time.Now().Unix())
+				}
+				select {
+				case sem<- struct{}{}:
+					go func(key string, value string) {
+						put(key, value)
+						<-sem
+						wg.Done()
+					}(key, fmt.Sprintf("%d", i))
+				}
 			}
-			put(key, fmt.Sprintf("%d", i))
+			wg.Wait()
+		} else {
+			var key string
+			for i := 0; i < *writeCount; i++ {
+				if *writeKey != "" {
+					key = *writeKey
+				} else {
+					key = fmt.Sprintf("%d", time.Now().Unix())
+				}
+				put(key, fmt.Sprintf("%d", i))
+			}
 		}
 		fmt.Printf("Processed %d in %s\n", *writeCount, time.Since(start))
 		break
