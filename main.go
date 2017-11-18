@@ -37,8 +37,9 @@ var (
 
 	action = flag.String("action", "", "Perform an action. Supported: read, write")
 	verbose = flag.Bool("verbose", false, "Print debug log")
-	host = flag.String("host", "", "Host's address")
-	port = flag.Int("port", 2379, "Service 's port")
+	scheme = flag.String("scheme", "http", "Service's scheme")
+	host = flag.String("host", "192.168.33.58", "Host's address")
+	port = flag.Int("port", 2379, "Service's port")
 )
 
 func init() {
@@ -137,7 +138,7 @@ func main() {
 }
 
 func get(key string) *Response {
-	response, err := http.Get(fmt.Sprintf("%s:%d/v2/keys/%s", *host, *port, key))
+	response, err := http.Get(fmt.Sprintf("%s://%s:%d/v2/keys/%s", *scheme, *host, *port, key))
 	if err != nil {
 		panic(err)
 	}
@@ -147,7 +148,7 @@ func get(key string) *Response {
 
 func put(key, value string) *Response {
 	payload := strings.NewReader(fmt.Sprintf("value=%s", value))
-	request, err := http.NewRequest(http.MethodPut, fmt.Sprintf("%s:%d/v2/keys/%s", *host, *port, key), payload)
+	request, err := http.NewRequest(http.MethodPut, fmt.Sprintf("%s://%s:%d/v2/keys/%s", *scheme, *host, *port, key), payload)
 	if err != nil {
 		panic(err)
 	}
