@@ -11,10 +11,6 @@ import (
 	"sync"
 )
 
-const (
-	ETCD_ADDRESS = "http://192.168.33.58:2379/v2/keys"
-)
-
 type Node struct {
 	Dir           bool   `json:"dir"`
 	Nodes         []Node `json:"nodes"`
