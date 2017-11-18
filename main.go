@@ -7,8 +7,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
-	"time"
 	"sync"
+	"time"
 )
 
 type Node struct {
@@ -27,19 +27,19 @@ type Response struct {
 }
 
 var (
-	writeCount  = flag.Int("writeCount", 0, "Total of writes count")
-	writeKey = flag.String("writeKey", "", "Write a specific key")
-	writeCon = flag.Bool("writeCon", false, "Write concurrently")
+	writeCount = flag.Int("writeCount", 0, "Total of writes count")
+	writeKey   = flag.String("writeKey", "", "Write a specific key")
+	writeCon   = flag.Bool("writeCon", false, "Write concurrently")
 
-	readCount  = flag.Int("readCount", 0, "Total of reads count")
-	readKey = flag.String("readKey", "", "Read a specific key")
-	readCon = flag.Bool("readCon", false, "Read concurrently")
+	readCount = flag.Int("readCount", 0, "Total of reads count")
+	readKey   = flag.String("readKey", "", "Read a specific key")
+	readCon   = flag.Bool("readCon", false, "Read concurrently")
 
-	action = flag.String("action", "", "Perform an action. Supported: read, write")
+	action  = flag.String("action", "", "Perform an action. Supported: read, write")
 	verbose = flag.Bool("verbose", false, "Print debug log")
-	scheme = flag.String("scheme", "http", "Service's scheme")
-	host = flag.String("host", "192.168.33.58", "Host's address")
-	port = flag.Int("port", 2379, "Service's port")
+	scheme  = flag.String("scheme", "http", "Service's scheme")
+	host    = flag.String("host", "192.168.33.58", "Host's address")
+	port    = flag.Int("port", 2379, "Service's port")
 )
 
 func init() {
@@ -47,7 +47,7 @@ func init() {
 }
 
 func main() {
-	fmt.Printf("action=%s verbose=%t writeCount=%d writeKey=%s writeCon=%t readCount=%d readKey=%s readCon=%t\n", *action, *verbose, *writeCount, *writeKey, *writeCon, *readCount, *readKey, *readCon)
+	fmt.Printf("address=%s://%s:%d action=%s verbose=%t writeCount=%d writeKey=%s writeCon=%t readCount=%d readKey=%s readCon=%t\n", *scheme, *host, *port, *action, *verbose, *writeCount, *writeKey, *writeCon, *readCount, *readKey, *readCon)
 	switch *action {
 	case "read":
 		if *readCount <= 0 {
@@ -65,10 +65,10 @@ func main() {
 				if *readKey != "" {
 					key = *readKey
 				} else {
-					key = r.Node.Nodes[i % l].Key
+					key = r.Node.Nodes[i%l].Key
 				}
 				select {
-				case sem<- struct{}{}:
+				case sem <- struct{}{}:
 					go func(key string) {
 						rs := get(key)
 						logf("%s => %s\n", rs.Node.Key, rs.Node.Value)
@@ -85,7 +85,7 @@ func main() {
 				if *readKey != "" {
 					key = *readKey
 				} else {
-					key = r.Node.Nodes[i % l].Key
+					key = r.Node.Nodes[i%l].Key
 				}
 				rs := get(key)
 				logf("%s => %s\n", rs.Node.Key, rs.Node.Value)
@@ -110,7 +110,7 @@ func main() {
 					key = fmt.Sprintf("%d", time.Now().Unix())
 				}
 				select {
-				case sem<- struct{}{}:
+				case sem <- struct{}{}:
 					go func(key string, value string) {
 						put(key, value)
 						<-sem
